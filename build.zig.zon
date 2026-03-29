@@ -1,6 +1,6 @@
 .{
     .name = .backupz,
-    .version = "0.0.0",
+    .version = "0.1.0",
     .fingerprint = 0xbd8d68bdc0dda3ff, // Changing this has security and trust implications.
     .minimum_zig_version = "0.16.0-dev.3013+abd131e33",
     .dependencies = .{
