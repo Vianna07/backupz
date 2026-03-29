@@ -7,18 +7,7 @@ const Sample = struct {
     is_student: bool,
 };
 
-var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
-
-const gpa = if (builtin.mode == .Debug)
-    debug_allocator.allocator()
-else
-    std.heap.smp_allocator;
-
 pub fn main(init: std.process.Init) !void {
-    defer if (builtin.mode == .Debug) {
-        _ = debug_allocator.deinit();
-    };
-
     const arena = init.arena.allocator();
     const args = try init.minimal.args.toSlice(arena);
     for (args) |arg| {
@@ -35,10 +24,10 @@ pub fn main(init: std.process.Init) !void {
         \\ is_student: true
     ;
     var yaml: Yaml = .{ .source = source };
-    defer yaml.deinit(gpa);
-    try yaml.load(gpa);
+    defer yaml.deinit(arena);
+    try yaml.load(arena);
 
-    const sample = try yaml.parse(gpa, Sample);
+    const sample = try yaml.parse(arena, Sample);
 
     try stdout.print("\nSample = {any}\n", .{sample});
     try yaml.stringify(stdout);
@@ -46,7 +35,9 @@ pub fn main(init: std.process.Init) !void {
 }
 
 test "yaml parsing" {
-    const alloc = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
 
     const source =
         \\ name: Vianna
