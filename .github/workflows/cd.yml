@@ -1,0 +1,46 @@
+name: CD
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-linux
+            archive: tar.xz
+          - target: aarch64-linux
+            archive: tar.xz
+          - target: x86_64-windows
+            archive: zip
+          - target: aarch64-macos
+            archive: tar.xz
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0-dev.3013+abd131e33
+
+      - name: Build
+        run: zig build --release=safe -Dtarget=${{ matrix.target }}
+
+      - name: Package (tar.xz)
+        if: matrix.archive == 'tar.xz'
+        run: tar -cJf backupz-${{ github.ref_name }}-${{ matrix.target }}.tar.xz -C zig-out/bin backupz
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        run: zip backupz-${{ github.ref_name }}-${{ matrix.target }}.zip zig-out/bin/backupz.exe
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: backupz-${{ github.ref_name }}-${{ matrix.target }}.*
