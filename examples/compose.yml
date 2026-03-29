@@ -1,0 +1,74 @@
+services:
+  db-hom:
+    image: postgres:15-alpine
+    container_name: pg_hom
+    restart: always
+    environment:
+      - POSTGRES_USER=user_hom
+      - POSTGRES_PASSWORD=password_hom
+      - POSTGRES_DB=db_hom
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_hom:/var/lib/postgresql/data
+      - ./scripts:/scripts
+
+  db-prod:
+    image: postgres:15-alpine
+    container_name: pg_prod
+    restart: always
+    environment:
+      - POSTGRES_USER=user_prod
+      - POSTGRES_PASSWORD=password_prod
+      - POSTGRES_DB=db_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+
+  db-staging:
+    image: postgres:15-alpine
+    container_name: pg_staging
+    restart: always
+    environment:
+      - POSTGRES_USER=user_staging
+      - POSTGRES_PASSWORD=password_staging
+      - POSTGRES_DB=db_staging
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_staging:/var/lib/postgresql/data
+
+  db-analytics:
+    image: postgres:16-alpine
+    container_name: pg_analytics
+    restart: always
+    environment:
+      - POSTGRES_USER=user_analytics
+      - POSTGRES_PASSWORD=password_analytics
+      - POSTGRES_DB=db_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_analytics:/var/lib/postgresql/data
+
+  db-other:
+    image: postgres:15-alpine
+    container_name: pg_other
+    restart: always
+    environment:
+      - POSTGRES_USER=user_other
+      - POSTGRES_PASSWORD=password_other
+      - POSTGRES_DB=db_other
+    ports:
+      - "6000:5432"
+    volumes:
+      - pgdata_other:/var/lib/postgresql/data
+      - ./scripts:/scripts
+
+volumes:
+  pgdata_hom:
+  pgdata_prod:
+  pgdata_staging:
+  pgdata_analytics:
+  pgdata_other:

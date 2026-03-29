@@ -1,0 +1,9 @@
+.{
+    .compose_file = "examples/compose.yml",
+    .port_range_start = 6100,
+    .port_range_end = 6200,
+    .databases = .{
+        .{ .service = "db-hom", .script = "backup.sql" },
+        .{ .service = "db-other", .script = "backup_other.sql" },
+    },
+}
