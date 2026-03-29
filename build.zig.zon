@@ -1,0 +1,20 @@
+.{
+    .name = .backupz,
+    .version = "0.0.0",
+    .fingerprint = 0xbd8d68bdc0dda3ff, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.16.0-dev.3013+abd131e33",
+    .dependencies = .{
+        .zig_yaml = .{
+            .url = "git+https://github.com/kubkon/zig-yaml.git?ref=main#84d747bc80937a08ea1cf76a63fee12c5fb1dd61",
+            .hash = "zig_yaml-0.3.0-C1161vSrAgCEKLk0825Y_GtmnThQI6O_cqtkBHb57KT-",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        // For example...
+        //"LICENSE",
+        //"README.md",
+    },
+}
