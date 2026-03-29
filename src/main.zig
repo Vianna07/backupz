@@ -24,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
     var writer_instance = stdout_file.writer(init.io, &buf);
     const stdout = &writer_instance.interface;
 
-    var args = std.process.Args.Iterator.init(init.minimal.args);
+    var args = try std.process.Args.Iterator.initAllocator(init.minimal.args, arena);
     _ = args.skip();
 
     var compose_override: ?[]const u8 = null;
@@ -130,7 +130,7 @@ fn loadConfigAndCompose(
 fn runCheck(alloc: std.mem.Allocator, io: std.Io, stdout: anytype, compose_override: ?[]const u8) !void {
     const loaded = try loadConfigAndCompose(alloc, io, stdout, compose_override) orelse return;
 
-    const result = try Check.check(alloc, loaded.cfg, loaded.compose);
+    const result = try Check.check(alloc, loaded.cfg, loaded.compose, io);
     try Check.printResult(result, stdout);
 }
 

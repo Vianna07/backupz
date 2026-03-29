@@ -22,7 +22,7 @@ pub const CheckResult = struct {
     ok: bool,
 };
 
-pub fn check(alloc: Allocator, cfg: Config.Config, compose: Compose.Compose) !CheckResult {
+pub fn check(alloc: Allocator, cfg: Config.Config, compose: Compose.Compose, io: ?std.Io) !CheckResult {
     var plans: std.ArrayList(ServicePlan) = .empty;
     var errors: std.ArrayList([]const u8) = .empty;
 
@@ -38,17 +38,18 @@ pub fn check(alloc: Allocator, cfg: Config.Config, compose: Compose.Compose) !Ch
 
     // Validate script files exist
     if (cfg.compose_file.len > 0) {
-        const compose_dir = std.fs.path.dirnamePosix(cfg.compose_file) orelse ".";
-        for (cfg.databases) |db| {
-            const script_path = try std.fmt.allocPrint(alloc, "{s}/scripts/{s}", .{ compose_dir, db.script });
-            const script_z = try alloc.dupeZ(u8, script_path);
-            _ = std.posix.openatZ(std.posix.AT.FDCWD, script_z, .{}, 0) catch {
-                try errors.append(alloc, try std.fmt.allocPrint(
-                    alloc,
-                    "script not found: {s}",
-                    .{script_path},
-                ));
-            };
+        if (io) |_io| {
+            const compose_dir = std.fs.path.dirnamePosix(cfg.compose_file) orelse ".";
+            for (cfg.databases) |db| {
+                const script_path = try std.fmt.allocPrint(alloc, "{s}/scripts/{s}", .{ compose_dir, db.script });
+                _ = std.Io.Dir.cwd().statFile(_io, script_path, .{}) catch {
+                    try errors.append(alloc, try std.fmt.allocPrint(
+                        alloc,
+                        "script not found: {s}",
+                        .{script_path},
+                    ));
+                };
+            }
         }
     }
 
@@ -234,7 +235,7 @@ test "detect port conflicts" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
 
     try std.testing.expect(result.ok);
     try std.testing.expectEqual(@as(usize, 3), result.plans.len);
@@ -269,7 +270,7 @@ test "error when primary service missing" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(!result.ok);
     try std.testing.expectEqual(@as(usize, 1), result.errors.len);
 }
@@ -296,7 +297,7 @@ test "error when primaries share same port" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(!result.ok);
 }
 
@@ -322,7 +323,7 @@ test "error when port range insufficient" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(!result.ok);
 }
 
@@ -350,7 +351,7 @@ test "multi-primary no conflicts" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expectEqual(@as(usize, 4), result.plans.len);
 
@@ -389,7 +390,7 @@ test "port range exactly sufficient" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expectEqual(@as(u16, 6100), result.plans[1].resolved_port);
     try std.testing.expectEqual(@as(u16, 6101), result.plans[2].resolved_port);
@@ -417,7 +418,7 @@ test "all services are primaries" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expect(result.plans[0].is_primary);
     try std.testing.expect(result.plans[1].is_primary);
@@ -444,7 +445,7 @@ test "service with port zero does not conflict" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expect(!result.plans[1].conflict);
     try std.testing.expectEqual(@as(u16, 0), result.plans[1].resolved_port);
@@ -471,7 +472,7 @@ test "primary with port zero does not cause false conflicts" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expect(!result.plans[1].conflict);
 }
@@ -497,7 +498,7 @@ test "multiple primaries some missing from compose" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(!result.ok);
     try std.testing.expectEqual(@as(usize, 1), result.errors.len);
 }
@@ -525,7 +526,7 @@ test "secondary conflicts with multiple primaries" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
     try std.testing.expect(result.plans[2].conflict);
     try std.testing.expectEqual(@as(u16, 6100), result.plans[2].resolved_port);
@@ -553,7 +554,7 @@ test "secondary inherits primary script" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
 
     // primary has its own script
@@ -587,7 +588,7 @@ test "skip_scripts prevents script inheritance" {
         }),
     };
 
-    const result = try check(alloc, cfg, compose);
+    const result = try check(alloc, cfg, compose, null);
     try std.testing.expect(result.ok);
 
     // primary has script

@@ -19,7 +19,7 @@ pub fn execute(
     compose_file: []const u8,
     writer: anytype,
 ) !void {
-    const result = try Check.check(alloc, cfg, compose);
+    const result = try Check.check(alloc, cfg, compose, io);
 
     if (!result.ok) {
         try Check.printResult(result, writer);
